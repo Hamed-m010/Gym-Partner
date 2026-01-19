@@ -84,24 +84,14 @@ button.nope {
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="app" id="login">
-    <h2>Logg inn</h2>
-    <input id="loginName" placeholder="Navn">
-    <button onclick="login()">Logg inn</button>
-    <p>Ingen bruker?
-        <a href="#" onclick="showRegister()">Registrer</a>
-    </p>
-</div>
-
-<!-- REGISTER -->
-<div class="app hidden" id="register">
-    <h2>Registrer deg</h2>
-    <input id="regName" placeholder="Navn">
-    <input id="regBio" placeholder="Bio (f.eks. Bryst & rygg)">
-    <input type="file" id="regImg" accept="image/*">
+<!-- OPPRETT PROFIL -->
+<div class="app" id="createProfile">
+    <h2>Lag profil</h2>
+    <input id="userName" placeholder="Navn">
+    <input id="userBio" placeholder="Bio (f.eks. Bryst & rygg)">
+    <input type="file" id="userImg" accept="image/*">
     <img id="preview">
-    <button onclick="registerUser()">Registrer</button>
+    <button onclick="createProfile()">Opprett profil</button>
 </div>
 
 <!-- SWIPE -->
@@ -130,81 +120,81 @@ button.nope {
 
 <script>
 /* ---------------- DATA ---------------- */
-let users = JSON.parse(localStorage.getItem("users")) || [];
-let currentUser = null;
+let users = []; // Liste over profiler
+let currentUser = null; // Profil vi laget
 let index = 0;
 let matchedUser = null;
 let uploadedImage = "";
 
 /* ---------------- BILDE OPPLASTING ---------------- */
-regImg.addEventListener("change", function () {
+const userImgInput = document.getElementById("userImg");
+const previewImg = document.getElementById("preview");
+
+userImgInput.addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = e => {
         uploadedImage = e.target.result;
-        preview.src = uploadedImage;
-        preview.style.display = "block";
+        previewImg.src = uploadedImage;
+        previewImg.style.display = "block";
     };
     reader.readAsDataURL(file);
 });
 
-/* ---------------- NAVIGASJON ---------------- */
-function showRegister() {
-    login.classList.add("hidden");
-    register.classList.remove("hidden");
-}
+/* ---------------- OPPRETT PROFIL ---------------- */
+function createProfile() {
+    const name = document.getElementById("userName").value.trim();
+    const bio = document.getElementById("userBio").value.trim();
 
-function login() {
-    const name = loginName.value.trim();
-    if (!name) return alert("Skriv navn");
-
-    currentUser = name;
-    login.classList.add("hidden");
-    swipe.classList.remove("hidden");
-    loadProfile();
-}
-
-/* ---------------- REGISTRERING ---------------- */
-function registerUser() {
-    if (!regName.value || !uploadedImage) {
-        alert("Fyll inn navn og last opp bilde");
+    if (!name || !uploadedImage) {
+        alert("Fyll inn navn og last opp bilde!");
         return;
     }
 
-    users.push({
-        name: regName.value,
-        bio: regBio.value,
-        img: uploadedImage
-    });
+    currentUser = { name, bio, img: uploadedImage };
+    users.push(currentUser);
 
-    localStorage.setItem("users", JSON.stringify(users));
-    alert("Registrert! Logg inn nå.");
+    document.getElementById("createProfile").classList.add("hidden");
+    document.getElementById("swipe").classList.remove("hidden");
 
-    register.classList.add("hidden");
-    login.classList.remove("hidden");
+    // Legg til noen demo-profiler
+    users.push(
+        { name: "Sara", bio: "Bein & cardio", img: "https://images.unsplash.com/photo-1594737625785-c5c6f33b6d07" },
+        { name: "Jonas", bio: "Powerlifting", img: "https://images.unsplash.com/photo-1599058917212-d750089bc07a" },
+        { name: "Mia", bio: "CrossFit", img: "https://images.unsplash.com/photo-1594737625754-8b8b1226e6b2" }
+    );
+
+    loadProfile();
 }
 
 /* ---------------- SWIPE ---------------- */
 function loadProfile() {
-    matchMsg.textContent = "";
+    document.getElementById("matchMsg").textContent = "";
 
     if (index >= users.length) {
-        matchMsg.textContent = "Ingen flere profiler 😢";
+        document.getElementById("matchMsg").textContent = "Ingen flere profiler 😢";
         return;
     }
 
     const p = users[index];
-    profileImg.src = p.img;
-    profileName.textContent = p.name;
-    profileBio.textContent = p.bio;
+    if (p.name === currentUser.name) {
+        index++; // Hopp over egen profil
+        loadProfile();
+        return;
+    }
+
+    document.getElementById("profileImg").src = p.img;
+    document.getElementById("profileName").textContent = p.name;
+    document.getElementById("profileBio").textContent = p.bio;
 }
 
 function swipe(like) {
+    const p = users[index];
     if (like && Math.random() > 0.5) {
-        matchedUser = users[index];
-        matchMsg.textContent = "🎉 MATCH!";
+        matchedUser = p;
+        document.getElementById("matchMsg").textContent = "🎉 MATCH!";
         setTimeout(openChat, 800);
         return;
     }
@@ -214,20 +204,22 @@ function swipe(like) {
 
 /* ---------------- CHAT ---------------- */
 function openChat() {
-    swipe.classList.add("hidden");
-    chat.classList.remove("hidden");
-    chatName.textContent = matchedUser.name;
+    document.getElementById("swipe").classList.add("hidden");
+    document.getElementById("chat").classList.remove("hidden");
+    document.getElementById("chatName").textContent = matchedUser.name;
 }
 
 function sendMsg() {
-    const msg = chatInput.value.trim();
+    const input = document.getElementById("chatInput");
+    const msg = input.value.trim();
     if (!msg) return;
 
+    const chatBox = document.getElementById("chatBox");
     chatBox.innerHTML += `<div class="msg me">Du: ${msg}</div>`;
-    chatInput.value = "";
+    input.value = "";
 
     setTimeout(() => {
-        chatBox.innerHTML += `<div class="msg them">${matchedUser.name}: Nice 💪🔥</div>`;
+        chatBox.innerHTML += `<div class="msg them">${matchedUser.name}: Haha, nice 💪</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
     }, 600);
 }
