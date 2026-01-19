@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<title>Gym Tinder 💪</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.hidden { display: none; }
+
+.app {
+    width: 360px;
+    background: #1e1e1e;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 0 20px black;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 6px;
+    border: none;
+}
+
+button {
+    background: #4dff88;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button.nope {
+    background: #ff4d4d;
+    color: white;
+}
+
+.card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.chat {
+    height: 300px;
+    background: #2a2a2a;
+    border-radius: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.msg {
+    margin: 5px 0;
+}
+
+.me { color: #4dff88; }
+.them { color: #fff; }
+
+#preview {
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 10px;
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="app" id="login">
+    <h2>Logg inn</h2>
+    <input id="loginName" placeholder="Navn">
+    <button onclick="login()">Logg inn</button>
+    <p>Ingen bruker?
+        <a href="#" onclick="showRegister()">Registrer</a>
+    </p>
+</div>
+
+<!-- REGISTER -->
+<div class="app hidden" id="register">
+    <h2>Registrer deg</h2>
+    <input id="regName" placeholder="Navn">
+    <input id="regBio" placeholder="Bio (f.eks. Bryst & rygg)">
+    <input type="file" id="regImg" accept="image/*">
+    <img id="preview">
+    <button onclick="registerUser()">Registrer</button>
+</div>
+
+<!-- SWIPE -->
+<div class="app hidden" id="swipe">
+    <div class="card">
+        <img id="profileImg">
+        <h3 id="profileName"></h3>
+        <p id="profileBio"></p>
+    </div>
+
+    <div class="buttons">
+        <button class="nope" onclick="swipe(false)">❌</button>
+        <button onclick="swipe(true)">❤️</button>
+    </div>
+
+    <p id="matchMsg"></p>
+</div>
+
+<!-- CHAT -->
+<div class="app hidden" id="chat">
+    <h3>Chat med <span id="chatName"></span></h3>
+    <div class="chat" id="chatBox"></div>
+    <input id="chatInput" placeholder="Skriv melding...">
+    <button onclick="sendMsg()">Send</button>
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let currentUser = null;
+let index = 0;
+let matchedUser = null;
+let uploadedImage = "";
+
+/* ---------------- BILDE OPPLASTING ---------------- */
+regImg.addEventListener("change", function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        uploadedImage = e.target.result;
+        preview.src = uploadedImage;
+        preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+});
+
+/* ---------------- NAVIGASJON ---------------- */
+function showRegister() {
+    login.classList.add("hidden");
+    register.classList.remove("hidden");
+}
+
+function login() {
+    const name = loginName.value.trim();
+    if (!name) return alert("Skriv navn");
+
+    currentUser = name;
+    login.classList.add("hidden");
+    swipe.classList.remove("hidden");
+    loadProfile();
+}
+
+/* ---------------- REGISTRERING ---------------- */
+function registerUser() {
+    if (!regName.value || !uploadedImage) {
+        alert("Fyll inn navn og last opp bilde");
+        return;
+    }
+
+    users.push({
+        name: regName.value,
+        bio: regBio.value,
+        img: uploadedImage
+    });
+
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("Registrert! Logg inn nå.");
+
+    register.classList.add("hidden");
+    login.classList.remove("hidden");
+}
+
+/* ---------------- SWIPE ---------------- */
+function loadProfile() {
+    matchMsg.textContent = "";
+
+    if (index >= users.length) {
+        matchMsg.textContent = "Ingen flere profiler 😢";
+        return;
+    }
+
+    const p = users[index];
+    profileImg.src = p.img;
+    profileName.textContent = p.name;
+    profileBio.textContent = p.bio;
+}
+
+function swipe(like) {
+    if (like && Math.random() > 0.5) {
+        matchedUser = users[index];
+        matchMsg.textContent = "🎉 MATCH!";
+        setTimeout(openChat, 800);
+        return;
+    }
+    index++;
+    loadProfile();
+}
+
+/* ---------------- CHAT ---------------- */
+function openChat() {
+    swipe.classList.add("hidden");
+    chat.classList.remove("hidden");
+    chatName.textContent = matchedUser.name;
+}
+
+function sendMsg() {
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+
+    chatBox.innerHTML += `<div class="msg me">Du: ${msg}</div>`;
+    chatInput.value = "";
+
+    setTimeout(() => {
+        chatBox.innerHTML += `<div class="msg them">${matchedUser.name}: Nice 💪🔥</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }, 600);
+}
+</script>
+
+</body>
+</html>
